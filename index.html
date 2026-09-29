@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบตรวจสอบและบันทึกข้อมูลขยะและของเสีย - TE-EHS-093</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Application Navigation Bar -->
+  <header class="app-navbar no-print">
+    <div class="nav-container">
+      <div class="brand-section">
+        <span class="brand-badge">TE</span>
+        <div>
+          <div class="brand-title">EHS Waste Inspection System</div>
+          <div class="brand-subtitle">TE-EHS-093 Rev.D • Monthly Monitor Dustbins & Waste Storage Area</div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs">
+        <button id="tab-dashboard-btn" class="nav-tab-btn active" onclick="switchView('dashboard')">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          แดชบอร์ดติดตามสถานะ
+        </button>
+        <button id="tab-form-btn" class="nav-tab-btn" onclick="switchView('form')">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          แบบฟอร์มทางการ (หน้าที่ 2)
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- 1. DASHBOARD VIEW -->
+  <!-- ========================================== -->
+  <section id="dashboard-view" class="view-section">
+    <!-- Header with "เพิ่มการตรวจสอบ (เปิดฟอร์ม)" -->
+    <div class="dash-header">
+      <div class="dash-title-group">
+        <h2>แดชบอร์ดติดตามสถานะการตรวจสอบ</h2>
+        <p>ภาพรวมสถานะการตรวจสอบขยะและของเสีย พร้อมประวัติการบันทึกแบบฟอร์ม</p>
+      </div>
+
+      <div class="action-buttons">
+        <button id="btn-open-form-new" class="btn btn-primary" onclick="openOfficialFormForNew()">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+          + เพิ่มการตรวจสอบ (เปิดแบบฟอร์ม)
+        </button>
+
+        <button class="btn btn-outline" onclick="exportAllInspectionsToCSV()">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          ส่งออกสรุป Excel
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Summary Grid -->
+    <div class="kpi-grid">
+      <div class="kpi-card total">
+        <div class="kpi-header">
+          <div>
+            <span class="kpi-label">เดือนปัจจุบัน ณ เวลาที่เข้า</span>
+            <div id="kpi-current-month-display" style="font-size:0.8rem; font-weight:700; color:#ea580c; margin-top:2px;">-</div>
+          </div>
+          <div class="kpi-icon">📅</div>
+        </div>
+        <div style="display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:4px;">
+          <div class="kpi-value" style="color:#ea580c;">
+            <span id="kpi-total-forms">0</span><span style="font-size:1.05rem; color:#64748b; font-weight:600;"> / 14 ครั้ง</span>
+          </div>
+          <div id="kpi-month-status-badge">
+            <span class="badge-status pending" style="font-size:0.75rem; padding:3px 8px;">⏳ ตรวจสอบสถานะ...</span>
+          </div>
+        </div>
+        <div class="kpi-progress-bar">
+          <div class="kpi-progress-fill" id="kpi-month-progress-fill" style="width: 0%;"></div>
+        </div>
+        <div class="kpi-subtext" id="kpi-month-subtext">เป้าหมาย 14 ครั้ง/เดือน</div>
+      </div>
+
+      <div class="kpi-card pass">
+        <div class="kpi-header">
+          <span class="kpi-label">จุดตรวจที่ผ่านเกณฑ์ (เดือนปัจจุบัน)</span>
+          <div class="kpi-icon">✓</div>
+        </div>
+        <div class="kpi-value" id="kpi-pass-points" style="color:#16a34a;">0</div>
+        <div class="kpi-subtext" id="kpi-pass-subtext">Pass ในเดือนนี้</div>
+      </div>
+
+      <div class="kpi-card fail">
+        <div class="kpi-header">
+          <span class="kpi-label">พบข้อบกพร่อง (เดือนปัจจุบัน)</span>
+          <div class="kpi-icon">✗</div>
+        </div>
+        <div class="kpi-value" id="kpi-fail-points" style="color:#dc2626;">0</div>
+        <div class="kpi-subtext" id="kpi-fail-subtext">Defect ในเดือนนี้</div>
+      </div>
+
+      <div class="kpi-card photo">
+        <div class="kpi-header">
+          <span class="kpi-label">รูปภาพหลักฐานแนบ (เดือนปัจจุบัน)</span>
+          <div class="kpi-icon">📷</div>
+        </div>
+        <div class="kpi-value" id="kpi-total-photos" style="color:#2563eb;">0</div>
+        <div class="kpi-subtext" id="kpi-photo-subtext">รูปภาพแนบในเดือนนี้</div>
+      </div>
+
+      <div class="kpi-card rate">
+        <div class="kpi-header">
+          <span class="kpi-label">อัตราผ่านเกณฑ์เฉลี่ย (เดือนปัจจุบัน)</span>
+          <div class="kpi-icon">📈</div>
+        </div>
+        <div class="kpi-value" id="kpi-pass-rate" style="color:#7c3aed;">0%</div>
+        <div class="kpi-subtext" id="kpi-rate-subtext">Pass Rate ในเดือนนี้</div>
+      </div>
+    </div>
+
+    <!-- Area Status Breakdown -->
+    <div class="dash-section-card">
+      <div class="card-title">
+        <span>สถานะจำแนกตามพื้นที่ (ข้อมูลสะสมทั้งหมดจาก History)</span>
+        <span style="font-size:0.8rem; font-weight:normal; color:#64748b;" id="area-breakdown-month-tag">(ประวัติทั้งหมดในระบบ)</span>
+      </div>
+
+      <!-- 2 Items: Total Pass & Total Defects (All Areas Combined - History) -->
+      <div class="area-total-summary-grid">
+        <div class="area-total-card pass">
+          <div class="area-total-icon">✓</div>
+          <div>
+            <div class="area-total-label">การตรวจสอบที่ผ่าน (รวมทุกพื้นที่ใน History)</div>
+            <div class="area-total-val" id="area-summary-total-pass">0 จุด</div>
+            <div class="area-total-sub">ผ่านเกณฑ์สะสมจากทุกรอบการตรวจ</div>
+          </div>
+        </div>
+
+        <div class="area-total-card fail">
+          <div class="area-total-icon">✗</div>
+          <div>
+            <div class="area-total-label">พบข้อบกพร่อง / ไม่ผ่าน (รวมทุกพื้นที่ใน History)</div>
+            <div class="area-total-val" id="area-summary-total-fail">0 จุด</div>
+            <div class="area-total-sub" id="area-summary-fail-sub">ไม่พบข้อบกพร่อง</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Container for displaying failed topics across history -->
+      <div id="area-failed-topics-container" style="display:none;"></div>
+
+      <div style="font-size:0.82rem; font-weight:700; color:#475569; margin: 4px 0 10px 0; display:flex; align-items:center; gap:6px;">
+        <span>📍 รายละเอียดการตรวจสอบสะสมแยกตามแต่ละพื้นที่ (14 จุดตรวจ):</span>
+      </div>
+      <div class="area-chips-container" id="dash-area-chips">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Saved Inspection Forms History Table -->
+    <div class="dash-section-card">
+      <div class="card-title">
+        <span>ประวัติการบันทึกแบบฟอร์มการตรวจสอบ (Inspection Records History)</span>
+        <button class="btn btn-primary btn-sm" onclick="openOfficialFormForNew()">+ บันทึกรอบใหม่</button>
+      </div>
+
+      <div class="table-scroll-container">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>ประจำเดือน (Month)</th>
+              <th>วันที่ตรวจ (Date)</th>
+              <th>พื้นที่การตรวจสอบ (Area)</th>
+              <th style="text-align: center;">ผ่าน (Pass)</th>
+              <th style="text-align: center;">ไม่ผ่าน (Defect)</th>
+              <th style="text-align: center;">รูปก่อนแก้ไข</th>
+              <th style="text-align: center;">รูปหลังการแก้ไข</th>
+              <th>ผู้ตรวจสอบ</th>
+              <th style="text-align: center;">สถานะการแก้ไข</th>
+              <th style="text-align: center; width: 220px;">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+      <div id="history-empty-state" style="text-align:center; padding: 36px 16px; color:#64748b;">
+        <div style="font-size:2.2rem; margin-bottom:8px;">📝</div>
+        <h4>ยังไม่มีประวัติการบันทึกแบบฟอร์ม</h4>
+        <p style="margin-top:4px;">กดปุ่ม <strong>"+ เพิ่มการตรวจสอบ (เปิดแบบฟอร์ม)"</strong> เพื่อบันทึกข้อมูลรอบแรก</p>
+      </div>
+    </div>
+
+    <!-- Attached Evidence Gallery -->
+    <div class="dash-section-card" id="evidence-gallery-card">
+      <div class="card-title">
+        <span>คลังรูปภาพหลักฐานการตรวจสอบ (Photo Evidence Gallery)</span>
+        <span style="font-size:0.8rem; font-weight:normal; color:#64748b;" id="gallery-count-label">0 รูป</span>
+      </div>
+      <div id="gallery-container" style="display:flex; flex-wrap:wrap; gap:12px;">
+        <!-- Photo thumbnails rendered dynamically -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 2. OFFICIAL FORM VIEW (PAGE 2) - DATA ENTRY -->
+  <!-- ========================================== -->
+  <section id="official-form-view" class="view-section hidden">
+    
+    <!-- Form Action Bar with Save Button -->
+    <div class="form-top-bar no-print">
+      <div class="form-status-info">
+        <button class="btn btn-outline btn-sm" onclick="switchView('dashboard')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          กลับหน้าแดชบอร์ด
+        </button>
+        <span id="form-mode-badge" style="background:#e0f2fe; color:#0369a1; padding:4px 10px; border-radius:6px; font-size:0.85rem; font-weight:700;">
+          🟢 กำลังบันทึกข้อมูลรอบใหม่
+        </span>
+      </div>
+
+      <div class="form-action-group">
+        <button id="btn-save-form" class="btn btn-success" onclick="saveCurrentInspectionForm()" style="font-size:0.95rem; padding:9px 18px; box-shadow:0 2px 4px rgba(22,163,74,0.3);">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          💾 บันทึกข้อมูลการตรวจสอบ
+        </button>
+
+        <button id="btn-pass-all" class="btn btn-outline" title="ทำเครื่องหมายผ่านทุกจุดที่ยังว่าง">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          ทำเครื่องหมายผ่านทั้งหมด
+        </button>
+
+        <button id="btn-print" class="btn btn-primary" onclick="window.print()" title="พิมพ์หรือบันทึกเป็น PDF ขนาด A4 แนวนอน">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          พิมพ์ / PDF (A4 แนวนอน)
+        </button>
+
+        <button id="btn-export-csv" class="btn btn-outline" title="ส่งออกเป็น Excel">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          ส่งออก Excel
+        </button>
+
+        <button id="btn-reset" class="btn btn-danger btn-sm" title="ล้างค่าทั้งหมด">
+          ล้างฟอร์ม
+        </button>
+      </div>
+    </div>
+
+    <!-- Official Paper Layout (Matches PDF Page 2) -->
+    <main class="paper-container" id="printable-form">
+      <!-- 1. Header Box -->
+      <div class="header-box">
+        <div class="logo-cell">
+          <img src="te_logo.png" alt="TE Connectivity Logo">
+        </div>
+        <div class="title-cell">
+          <h1 class="title-th">ใบรายงานการตรวจสอบภาชนะสำหรับคัดแยกขยะและจุดพักขยะของบริษัทประจำเดือน</h1>
+          <h2 class="title-en">Monthly monitor dustbins & waste storage area form</h2>
+        </div>
+        <div class="meta-cell">
+          <div class="doc-no">Doc. No. TE-EHS-093</div>
+          <div class="doc-rev">Rev.D Eff.July 23 ,2025</div>
+        </div>
+      </div>
+
+      <!-- Month, Date, Inspection Area & Inspector Row -->
+      <div class="month-row" style="flex-wrap: wrap; gap: 14px; background: #f8fafc; padding: 10px 14px; border: 1.5px solid #000; border-top: none; margin-bottom: 12px;">
+        <div class="month-input-wrapper">
+          <span>ประจำเดือน (Month):</span>
+          <input type="month" id="inspection-month" class="form-control-sm" style="font-weight:600; min-width:140px;">
+        </div>
+        
+        <div class="month-input-wrapper">
+          <span>วันที่ตรวจประเมิน:</span>
+          <input type="date" id="inspection-date" class="form-control-sm">
+        </div>
+
+        <div class="month-input-wrapper" style="border-left: 2px solid #cbd5e1; padding-left: 12px;">
+          <span style="font-weight:700; color: #c2410c;">พื้นที่การตรวจสอบ (Area):</span>
+          <span id="detected-area-display" style="font-weight:700; font-size:0.95rem; color:#ea580c; min-width:180px; display:inline-block; padding:4px 10px; background:#fff7ed; border:1.5px solid #fdba74; border-radius:6px; min-height:28px;">— คลิกเซลล์เพื่อเลือกพื้นที่ —</span>
+        </div>
+
+        <div class="month-input-wrapper" style="margin-left:auto; border-left: 2px solid #cbd5e1; padding-left: 12px;">
+          <span style="font-weight:700; color: #0f172a;">ผู้ตรวจสอบ (Inspector): <span style="color:red;">*</span></span>
+          <input type="text" id="main-inspector-input" class="form-control-sm" placeholder="ระบุชื่อผู้ตรวจสอบ..." style="font-weight:600; min-width:180px;" oninput="handleMainInspectorInput(this.value)">
+        </div>
+      </div>
+
+      <!-- Table 1: Waste Bins From Each Area -->
+      <div class="table-scroll-container">
+        <table class="inspection-table" id="table-area-bins">
+          <thead>
+            <tr>
+              <th rowspan="2" style="width: 31%; text-align: left; padding-left: 10px;">
+                <div>ภาชนะคัดแยกขยะในแต่ละพื้นที่</div>
+                <div style="font-size:0.8rem; color:#334155;">WASTE BINS FROM EACH AREA</div>
+              </th>
+              <th colspan="2" style="width: 8%;">WH</th>
+              <th rowspan="2" style="width: 4%;">AS</th>
+              <th rowspan="2" style="width: 4%;">MD</th>
+              <th rowspan="2" style="width: 4%;">SP</th>
+              <th rowspan="2" style="width: 4%;">FC</th>
+              <th rowspan="2" style="width: 4%;">QC</th>
+              <th rowspan="2" style="width: 4%;">TL</th>
+              <th rowspan="2" style="width: 23%;">
+                <div>ข้อบกพร่องที่ตรวจพบ & รูปก่อนแก้ไข</div>
+                <div style="font-size:0.75rem; font-weight:normal; color:#475569;">Defects & Photos (ก่อนแก้ไข)</div>
+              </th>
+              <th rowspan="2" style="width: 14%;">
+                <div>ผู้รับผิดชอบ & รูปหลังการแก้ไข</div>
+                <div style="font-size:0.75rem; font-weight:normal; color:#475569;">Responsibility & Photos (หลังการแก้ไข)</div>
+              </th>
+            </tr>
+            <tr>
+              <th style="width: 4%; font-size:0.8rem;">IN</th>
+              <th style="width: 4%; font-size:0.8rem;">OUT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1 -->
+            <tr data-table="t1" data-row="1">
+              <td class="item-desc-cell"><span class="item-num">1.</span>การคัดแยกขยะถูกถัง/ถูกประเภท</td>
+              <td class="status-cell state-empty" data-id="t1_r1_wh_in"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r1_wh_out"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r1_as"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r1_md"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r1_sp"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r1_fc"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r1_qc"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r1_tl"><span class="status-badge">-</span></td>
+              <td>
+                <div class="defect-input-group">
+                  <textarea class="table-text-input" rows="1" id="t1_r1_defect" placeholder="ระบุข้อบกพร่อง (ถ้ามี)..."></textarea>
+                  <div class="row-photo-container">
+                    <button type="button" class="btn-attach-photo no-print" onclick="triggerRowPhotoUpload('t1_r1')">
+                      📷 แนบรูปภาพ
+                    </button>
+                    <input type="file" id="t1_r1_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t1_r1', event)">
+                    <div class="row-photo-preview" id="t1_r1_photo_preview" style="display:none;">
+                      <img id="t1_r1_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'ข้อ 1: การคัดแยกขยะถูกถัง/ถูกประเภท')" title="คลิกดูภาพขยาย">
+                      <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t1_r1')" title="ลบรูป">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="table-text-input" id="t1_r1_resp" placeholder="ชื่อผู้รับผิดชอบ...">
+                <div class="row-photo-container">
+                  <button type="button" class="btn-attach-photo no-print" id="t1_r1_resp_photo_btn" onclick="triggerRowPhotoUpload('t1_r1_resp')">
+                    📷 แนบรูปภาพ
+                  </button>
+                  <input type="file" id="t1_r1_resp_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t1_r1_resp', event)">
+                  <div class="row-photo-preview" id="t1_r1_resp_photo_preview" style="display:none;">
+                    <img id="t1_r1_resp_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'รูปภาพผู้รับผิดชอบ')" title="คลิกดูภาพขยาย">
+                    <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t1_r1_resp')" title="ลบรูป">✕</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 2 -->
+            <tr data-table="t1" data-row="2">
+              <td class="item-desc-cell"><span class="item-num">2.</span>ไม่มีขยะหกตามพื้น</td>
+              <td class="status-cell state-empty" data-id="t1_r2_wh_in"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r2_wh_out"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r2_as"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r2_md"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r2_sp"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r2_fc"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r2_qc"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r2_tl"><span class="status-badge">-</span></td>
+              <td>
+                <div class="defect-input-group">
+                  <textarea class="table-text-input" rows="1" id="t1_r2_defect" placeholder="ระบุข้อบกพร่อง (ถ้ามี)..."></textarea>
+                  <div class="row-photo-container">
+                    <button type="button" class="btn-attach-photo no-print" onclick="triggerRowPhotoUpload('t1_r2')">
+                      📷 แนบรูปภาพ
+                    </button>
+                    <input type="file" id="t1_r2_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t1_r2', event)">
+                    <div class="row-photo-preview" id="t1_r2_photo_preview" style="display:none;">
+                      <img id="t1_r2_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'ข้อ 2: ไม่มีขยะหกตามพื้น')" title="คลิกดูภาพขยาย">
+                      <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t1_r2')" title="ลบรูป">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="table-text-input" id="t1_r2_resp" placeholder="ชื่อผู้รับผิดชอบ...">
+                <div class="row-photo-container">
+                  <button type="button" class="btn-attach-photo no-print" id="t1_r2_resp_photo_btn" onclick="triggerRowPhotoUpload('t1_r2_resp')">
+                    📷 แนบรูปภาพ
+                  </button>
+                  <input type="file" id="t1_r2_resp_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t1_r2_resp', event)">
+                  <div class="row-photo-preview" id="t1_r2_resp_photo_preview" style="display:none;">
+                    <img id="t1_r2_resp_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'รูปภาพผู้รับผิดชอบ')" title="คลิกดูภาพขยาย">
+                    <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t1_r2_resp')" title="ลบรูป">✕</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 3 -->
+            <tr data-table="t1" data-row="3">
+              <td class="item-desc-cell"><span class="item-num">3.</span>ถังขยะไม่แตก/ชำรุด</td>
+              <td class="status-cell state-empty" data-id="t1_r3_wh_in"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r3_wh_out"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r3_as"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r3_md"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r3_sp"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r3_fc"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r3_qc"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r3_tl"><span class="status-badge">-</span></td>
+              <td>
+                <div class="defect-input-group">
+                  <textarea class="table-text-input" rows="1" id="t1_r3_defect" placeholder="ระบุข้อบกพร่อง (ถ้ามี)..."></textarea>
+                  <div class="row-photo-container">
+                    <button type="button" class="btn-attach-photo no-print" onclick="triggerRowPhotoUpload('t1_r3')">
+                      📷 แนบรูปภาพ
+                    </button>
+                    <input type="file" id="t1_r3_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t1_r3', event)">
+                    <div class="row-photo-preview" id="t1_r3_photo_preview" style="display:none;">
+                      <img id="t1_r3_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'ข้อ 3: ถังขยะไม่แตก/ชำรุด')" title="คลิกดูภาพขยาย">
+                      <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t1_r3')" title="ลบรูป">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="table-text-input" id="t1_r3_resp" placeholder="ชื่อผู้รับผิดชอบ...">
+                <div class="row-photo-container">
+                  <button type="button" class="btn-attach-photo no-print" id="t1_r3_resp_photo_btn" onclick="triggerRowPhotoUpload('t1_r3_resp')">
+                    📷 แนบรูปภาพ
+                  </button>
+                  <input type="file" id="t1_r3_resp_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t1_r3_resp', event)">
+                  <div class="row-photo-preview" id="t1_r3_resp_photo_preview" style="display:none;">
+                    <img id="t1_r3_resp_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'รูปภาพผู้รับผิดชอบ')" title="คลิกดูภาพขยาย">
+                    <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t1_r3_resp')" title="ลบรูป">✕</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 4 -->
+            <tr data-table="t1" data-row="4">
+              <td class="item-desc-cell"><span class="item-num">4.</span>ไม่มีขยะอันตรายทิ้งปนกับขยะรีไซเคิลหรือขยะทั่วไป</td>
+              <td class="status-cell state-empty" data-id="t1_r4_wh_in"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r4_wh_out"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r4_as"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r4_md"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r4_sp"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r4_fc"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r4_qc"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t1_r4_tl"><span class="status-badge">-</span></td>
+              <td>
+                <div class="defect-input-group">
+                  <textarea class="table-text-input" rows="1" id="t1_r4_defect" placeholder="ระบุข้อบกพร่อง (ถ้ามี)..."></textarea>
+                  <div class="row-photo-container">
+                    <button type="button" class="btn-attach-photo no-print" onclick="triggerRowPhotoUpload('t1_r4')">
+                      📷 แนบรูปภาพ
+                    </button>
+                    <input type="file" id="t1_r4_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t1_r4', event)">
+                    <div class="row-photo-preview" id="t1_r4_photo_preview" style="display:none;">
+                      <img id="t1_r4_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'ข้อ 4: ไม่มีขยะอันตรายทิ้งปน')" title="คลิกดูภาพขยาย">
+                      <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t1_r4')" title="ลบรูป">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="table-text-input" id="t1_r4_resp" placeholder="ชื่อผู้รับผิดชอบ...">
+                <div class="row-photo-container">
+                  <button type="button" class="btn-attach-photo no-print" id="t1_r4_resp_photo_btn" onclick="triggerRowPhotoUpload('t1_r4_resp')">
+                    📷 แนบรูปภาพ
+                  </button>
+                  <input type="file" id="t1_r4_resp_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t1_r4_resp', event)">
+                  <div class="row-photo-preview" id="t1_r4_resp_photo_preview" style="display:none;">
+                    <img id="t1_r4_resp_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'รูปภาพผู้รับผิดชอบ')" title="คลิกดูภาพขยาย">
+                    <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t1_r4_resp')" title="ลบรูป">✕</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Table 2: Waste Storage Area -->
+      <div class="table-scroll-container">
+        <table class="inspection-table" id="table-storage-area">
+          <thead>
+            <tr>
+              <th rowspan="2" style="width: 31%; text-align: left; padding-left: 10px;">
+                <div>พื้นที่จุดพักขยะรวมของบริษัทฯ</div>
+                <div style="font-size:0.8rem; color:#334155;">WASTE STORAGE AREA</div>
+              </th>
+              <th rowspan="2" style="width: 7%;">Scrap Room</th>
+              <th colspan="4" style="width: 17%;">Chemical Room</th>
+              <th rowspan="2" style="width: 8%;">Container</th>
+              <th rowspan="2" style="width: 23%;">
+                <div>ข้อบกพร่องที่ตรวจพบ & รูปก่อนแก้ไข</div>
+                <div style="font-size:0.75rem; font-weight:normal; color:#475569;">Defects & Photos (ก่อนแก้ไข)</div>
+              </th>
+              <th rowspan="2" style="width: 14%;">
+                <div>ผู้รับผิดชอบ & รูปหลังการแก้ไข</div>
+                <div style="font-size:0.75rem; font-weight:normal; color:#475569;">Responsibility & Photos (หลังการแก้ไข)</div>
+              </th>
+            </tr>
+            <tr>
+              <th style="width: 4.25%; font-size:0.8rem;">W1</th>
+              <th style="width: 4.25%; font-size:0.8rem;">W2</th>
+              <th style="width: 4.25%; font-size:0.8rem;">W3</th>
+              <th style="width: 4.25%; font-size:0.8rem;">W4</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1 -->
+            <tr data-table="t2" data-row="1">
+              <td class="item-desc-cell"><span class="item-num">1.</span>ภาชนะบรรจุไม่แตกร้าวและมีฝาปิด</td>
+              <td class="status-cell state-empty" data-id="t2_r1_scrap"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r1_chem_w1"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r1_chem_w2"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r1_chem_w3"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r1_chem_w4"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r1_container"><span class="status-badge">-</span></td>
+              <td>
+                <div class="defect-input-group">
+                  <textarea class="table-text-input" rows="1" id="t2_r1_defect" placeholder="ระบุข้อบกพร่อง (ถ้ามี)..."></textarea>
+                  <div class="row-photo-container">
+                    <button type="button" class="btn-attach-photo no-print" onclick="triggerRowPhotoUpload('t2_r1')">
+                      📷 แนบรูปภาพ
+                    </button>
+                    <input type="file" id="t2_r1_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r1', event)">
+                    <div class="row-photo-preview" id="t2_r1_photo_preview" style="display:none;">
+                      <img id="t2_r1_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'ข้อ 1: ภาชนะบรรจุไม่แตกร้าวและมีฝาปิด')" title="คลิกดูภาพขยาย">
+                      <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r1')" title="ลบรูป">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="table-text-input" id="t2_r1_resp" placeholder="ชื่อผู้รับผิดชอบ...">
+                <div class="row-photo-container">
+                  <button type="button" class="btn-attach-photo no-print" id="t2_r1_resp_photo_btn" onclick="triggerRowPhotoUpload('t2_r1_resp')">
+                    📷 แนบรูปภาพ
+                  </button>
+                  <input type="file" id="t2_r1_resp_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r1_resp', event)">
+                  <div class="row-photo-preview" id="t2_r1_resp_photo_preview" style="display:none;">
+                    <img id="t2_r1_resp_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'รูปภาพผู้รับผิดชอบ')" title="คลิกดูภาพขยาย">
+                    <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r1_resp')" title="ลบรูป">✕</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 2 -->
+            <tr data-table="t2" data-row="2">
+              <td class="item-desc-cell"><span class="item-num">2.</span>จัดเก็บของเสียตามพื้นที่ที่กำหนด</td>
+              <td class="status-cell state-empty" data-id="t2_r2_scrap"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r2_chem_w1"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r2_chem_w2"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r2_chem_w3"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r2_chem_w4"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r2_container"><span class="status-badge">-</span></td>
+              <td>
+                <div class="defect-input-group">
+                  <textarea class="table-text-input" rows="1" id="t2_r2_defect" placeholder="ระบุข้อบกพร่อง (ถ้ามี)..."></textarea>
+                  <div class="row-photo-container">
+                    <button type="button" class="btn-attach-photo no-print" onclick="triggerRowPhotoUpload('t2_r2')">
+                      📷 แนบรูปภาพ
+                    </button>
+                    <input type="file" id="t2_r2_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r2', event)">
+                    <div class="row-photo-preview" id="t2_r2_photo_preview" style="display:none;">
+                      <img id="t2_r2_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'ข้อ 2: จัดเก็บของเสียตามพื้นที่ที่กำหนด')" title="คลิกดูภาพขยาย">
+                      <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r2')" title="ลบรูป">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="table-text-input" id="t2_r2_resp" placeholder="ชื่อผู้รับผิดชอบ...">
+                <div class="row-photo-container">
+                  <button type="button" class="btn-attach-photo no-print" id="t2_r2_resp_photo_btn" onclick="triggerRowPhotoUpload('t2_r2_resp')">
+                    📷 แนบรูปภาพ
+                  </button>
+                  <input type="file" id="t2_r2_resp_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r2_resp', event)">
+                  <div class="row-photo-preview" id="t2_r2_resp_photo_preview" style="display:none;">
+                    <img id="t2_r2_resp_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'รูปภาพผู้รับผิดชอบ')" title="คลิกดูภาพขยาย">
+                    <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r2_resp')" title="ลบรูป">✕</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 3 -->
+            <tr data-table="t2" data-row="3">
+              <td class="item-desc-cell"><span class="item-num">3.</span>มีการแยกขยะของเสียแต่ละประเภท</td>
+              <td class="status-cell state-empty" data-id="t2_r3_scrap"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r3_chem_w1"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r3_chem_w2"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r3_chem_w3"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r3_chem_w4"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r3_container"><span class="status-badge">-</span></td>
+              <td>
+                <div class="defect-input-group">
+                  <textarea class="table-text-input" rows="1" id="t2_r3_defect" placeholder="ระบุข้อบกพร่อง (ถ้ามี)..."></textarea>
+                  <div class="row-photo-container">
+                    <button type="button" class="btn-attach-photo no-print" onclick="triggerRowPhotoUpload('t2_r3')">
+                      📷 แนบรูปภาพ
+                    </button>
+                    <input type="file" id="t2_r3_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r3', event)">
+                    <div class="row-photo-preview" id="t2_r3_photo_preview" style="display:none;">
+                      <img id="t2_r3_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'ข้อ 3: มีการแยกขยะของเสียแต่ละประเภท')" title="คลิกดูภาพขยาย">
+                      <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r3')" title="ลบรูป">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="table-text-input" id="t2_r3_resp" placeholder="ชื่อผู้รับผิดชอบ...">
+                <div class="row-photo-container">
+                  <button type="button" class="btn-attach-photo no-print" id="t2_r3_resp_photo_btn" onclick="triggerRowPhotoUpload('t2_r3_resp')">
+                    📷 แนบรูปภาพ
+                  </button>
+                  <input type="file" id="t2_r3_resp_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r3_resp', event)">
+                  <div class="row-photo-preview" id="t2_r3_resp_photo_preview" style="display:none;">
+                    <img id="t2_r3_resp_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'รูปภาพผู้รับผิดชอบ')" title="คลิกดูภาพขยาย">
+                    <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r3_resp')" title="ลบรูป">✕</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 4 -->
+            <tr data-table="t2" data-row="4">
+              <td class="item-desc-cell"><span class="item-num">4.</span>ถังขยะปิดฝาเรียบร้อย</td>
+              <td class="status-cell state-empty" data-id="t2_r4_scrap"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r4_chem_w1"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r4_chem_w2"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r4_chem_w3"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r4_chem_w4"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r4_container"><span class="status-badge">-</span></td>
+              <td>
+                <div class="defect-input-group">
+                  <textarea class="table-text-input" rows="1" id="t2_r4_defect" placeholder="ระบุข้อบกพร่อง (ถ้ามี)..."></textarea>
+                  <div class="row-photo-container">
+                    <button type="button" class="btn-attach-photo no-print" onclick="triggerRowPhotoUpload('t2_r4')">
+                      📷 แนบรูปภาพ
+                    </button>
+                    <input type="file" id="t2_r4_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r4', event)">
+                    <div class="row-photo-preview" id="t2_r4_photo_preview" style="display:none;">
+                      <img id="t2_r4_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'ข้อ 4: ถังขยะปิดฝาเรียบร้อย')" title="คลิกดูภาพขยาย">
+                      <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r4')" title="ลบรูป">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="table-text-input" id="t2_r4_resp" placeholder="ชื่อผู้รับผิดชอบ...">
+                <div class="row-photo-container">
+                  <button type="button" class="btn-attach-photo no-print" id="t2_r4_resp_photo_btn" onclick="triggerRowPhotoUpload('t2_r4_resp')">
+                    📷 แนบรูปภาพ
+                  </button>
+                  <input type="file" id="t2_r4_resp_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r4_resp', event)">
+                  <div class="row-photo-preview" id="t2_r4_resp_photo_preview" style="display:none;">
+                    <img id="t2_r4_resp_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'รูปภาพผู้รับผิดชอบ')" title="คลิกดูภาพขยาย">
+                    <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r4_resp')" title="ลบรูป">✕</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 5 -->
+            <tr data-table="t2" data-row="5">
+              <td class="item-desc-cell"><span class="item-num">5.</span>ไม่มีของเสียหกตามพื้น/รางระบายน้ำฝน</td>
+              <td class="status-cell state-empty" data-id="t2_r5_scrap"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r5_chem_w1"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r5_chem_w2"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r5_chem_w3"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r5_chem_w4"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r5_container"><span class="status-badge">-</span></td>
+              <td>
+                <div class="defect-input-group">
+                  <textarea class="table-text-input" rows="1" id="t2_r5_defect" placeholder="ระบุข้อบกพร่อง (ถ้ามี)..."></textarea>
+                  <div class="row-photo-container">
+                    <button type="button" class="btn-attach-photo no-print" onclick="triggerRowPhotoUpload('t2_r5')">
+                      📷 แนบรูปภาพ
+                    </button>
+                    <input type="file" id="t2_r5_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r5', event)">
+                    <div class="row-photo-preview" id="t2_r5_photo_preview" style="display:none;">
+                      <img id="t2_r5_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'ข้อ 5: ไม่มีของเสียหกตามพื้น')" title="คลิกดูภาพขยาย">
+                      <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r5')" title="ลบรูป">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="table-text-input" id="t2_r5_resp" placeholder="ชื่อผู้รับผิดชอบ...">
+                <div class="row-photo-container">
+                  <button type="button" class="btn-attach-photo no-print" id="t2_r5_resp_photo_btn" onclick="triggerRowPhotoUpload('t2_r5_resp')">
+                    📷 แนบรูปภาพ
+                  </button>
+                  <input type="file" id="t2_r5_resp_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r5_resp', event)">
+                  <div class="row-photo-preview" id="t2_r5_resp_photo_preview" style="display:none;">
+                    <img id="t2_r5_resp_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'รูปภาพผู้รับผิดชอบ')" title="คลิกดูภาพขยาย">
+                    <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r5_resp')" title="ลบรูป">✕</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 6 -->
+            <tr data-table="t2" data-row="6">
+              <td class="item-desc-cell"><span class="item-num">6.</span>อาคารเก็บของเสียหรือภาชนะบรรจุของเสียประตูปิดเรียบร้อย/ไม่เปิดค้างไว้</td>
+              <td class="status-cell state-empty" data-id="t2_r6_scrap"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r6_chem_w1"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r6_chem_w2"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r6_chem_w3"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r6_chem_w4"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r6_container"><span class="status-badge">-</span></td>
+              <td>
+                <div class="defect-input-group">
+                  <textarea class="table-text-input" rows="1" id="t2_r6_defect" placeholder="ระบุข้อบกพร่อง (ถ้ามี)..."></textarea>
+                  <div class="row-photo-container">
+                    <button type="button" class="btn-attach-photo no-print" onclick="triggerRowPhotoUpload('t2_r6')">
+                      📷 แนบรูปภาพ
+                    </button>
+                    <input type="file" id="t2_r6_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r6', event)">
+                    <div class="row-photo-preview" id="t2_r6_photo_preview" style="display:none;">
+                      <img id="t2_r6_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'ข้อ 6: ประตูปิดเรียบร้อย')" title="คลิกดูภาพขยาย">
+                      <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r6')" title="ลบรูป">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="table-text-input" id="t2_r6_resp" placeholder="ชื่อผู้รับผิดชอบ...">
+                <div class="row-photo-container">
+                  <button type="button" class="btn-attach-photo no-print" id="t2_r6_resp_photo_btn" onclick="triggerRowPhotoUpload('t2_r6_resp')">
+                    📷 แนบรูปภาพ
+                  </button>
+                  <input type="file" id="t2_r6_resp_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r6_resp', event)">
+                  <div class="row-photo-preview" id="t2_r6_resp_photo_preview" style="display:none;">
+                    <img id="t2_r6_resp_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'รูปภาพผู้รับผิดชอบ')" title="คลิกดูภาพขยาย">
+                    <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r6_resp')" title="ลบรูป">✕</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 7 -->
+            <tr data-table="t2" data-row="7">
+              <td class="item-desc-cell"><span class="item-num">7.</span>อาคารสถานที่เก็บของเสียหรือภาชนะบรรจุของเสียไม่มีรอยแตกของอาคาร/ไม่มีน้ำขังปนเปื้อนของเสียอันตราย</td>
+              <td class="status-cell state-empty" data-id="t2_r7_scrap"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r7_chem_w1"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r7_chem_w2"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r7_chem_w3"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r7_chem_w4"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r7_container"><span class="status-badge">-</span></td>
+              <td>
+                <div class="defect-input-group">
+                  <textarea class="table-text-input" rows="1" id="t2_r7_defect" placeholder="ระบุข้อบกพร่อง (ถ้ามี)..."></textarea>
+                  <div class="row-photo-container">
+                    <button type="button" class="btn-attach-photo no-print" onclick="triggerRowPhotoUpload('t2_r7')">
+                      📷 แนบรูปภาพ
+                    </button>
+                    <input type="file" id="t2_r7_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r7', event)">
+                    <div class="row-photo-preview" id="t2_r7_photo_preview" style="display:none;">
+                      <img id="t2_r7_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'ข้อ 7: ไม่มีรอยแตก/น้ำขังปนเปื้อน')" title="คลิกดูภาพขยาย">
+                      <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r7')" title="ลบรูป">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="table-text-input" id="t2_r7_resp" placeholder="ชื่อผู้รับผิดชอบ...">
+                <div class="row-photo-container">
+                  <button type="button" class="btn-attach-photo no-print" id="t2_r7_resp_photo_btn" onclick="triggerRowPhotoUpload('t2_r7_resp')">
+                    📷 แนบรูปภาพ
+                  </button>
+                  <input type="file" id="t2_r7_resp_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r7_resp', event)">
+                  <div class="row-photo-preview" id="t2_r7_resp_photo_preview" style="display:none;">
+                    <img id="t2_r7_resp_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'รูปภาพผู้รับผิดชอบ')" title="คลิกดูภาพขยาย">
+                    <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r7_resp')" title="ลบรูป">✕</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 8 -->
+            <tr data-table="t2" data-row="8">
+              <td class="item-desc-cell"><span class="item-num">8.</span>มีการติดฉลากที่ภาชนะบรรจุของเสีย</td>
+              <td class="status-cell state-empty" data-id="t2_r8_scrap"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r8_chem_w1"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r8_chem_w2"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r8_chem_w3"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r8_chem_w4"><span class="status-badge">-</span></td>
+              <td class="status-cell state-empty" data-id="t2_r8_container"><span class="status-badge">-</span></td>
+              <td>
+                <div class="defect-input-group">
+                  <textarea class="table-text-input" rows="1" id="t2_r8_defect" placeholder="ระบุข้อบกพร่อง (ถ้ามี)..."></textarea>
+                  <div class="row-photo-container">
+                    <button type="button" class="btn-attach-photo no-print" onclick="triggerRowPhotoUpload('t2_r8')">
+                      📷 แนบรูปภาพ
+                    </button>
+                    <input type="file" id="t2_r8_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r8', event)">
+                    <div class="row-photo-preview" id="t2_r8_photo_preview" style="display:none;">
+                      <img id="t2_r8_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'ข้อ 8: การติดฉลากที่ภาชนะบรรจุ')" title="คลิกดูภาพขยาย">
+                      <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r8')" title="ลบรูป">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <input type="text" class="table-text-input" id="t2_r8_resp" placeholder="ชื่อผู้รับผิดชอบ...">
+                <div class="row-photo-container">
+                  <button type="button" class="btn-attach-photo no-print" id="t2_r8_resp_photo_btn" onclick="triggerRowPhotoUpload('t2_r8_resp')">
+                    📷 แนบรูปภาพ
+                  </button>
+                  <input type="file" id="t2_r8_resp_photo_file" accept="image/*" style="display:none;" onchange="handleRowPhotoUpload('t2_r8_resp', event)">
+                  <div class="row-photo-preview" id="t2_r8_resp_photo_preview" style="display:none;">
+                    <img id="t2_r8_resp_photo_img" src="" onclick="openLightboxFromSrc(this.src, 'รูปภาพผู้รับผิดชอบ')" title="คลิกดูภาพขยาย">
+                    <button type="button" class="btn-remove-row-photo no-print" onclick="removeRowPhoto('t2_r8_resp')" title="ลบรูป">✕</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Notes Box -->
+      <div class="notes-container">
+        <div class="notes-title">หมายเหตุ (Legend & Notes):</div>
+        <div class="notes-abbrev-grid">
+          <div><strong>WH</strong> = Warehouse Receiving & Out Going</div>
+          <div><strong>AS</strong> = Assembly Area</div>
+          <div><strong>MD</strong> = Molding Area</div>
+          <div><strong>SP</strong> = Stamping Area</div>
+          <div><strong>FC</strong> = Finishing / Facility</div>
+          <div><strong>QC</strong> = Quality Control</div>
+          <div><strong>TL</strong> = Tool Room</div>
+        </div>
+        <div class="notes-abbrev-grid" style="border-top: 1px dotted #cbd5e1; padding-top: 4px; margin-top: 4px;">
+          <div><strong>Scrap Room</strong> : stored Recycle waste</div>
+          <div><strong>Chemical Room</strong> : stored hazardous waste</div>
+          <div><strong>Container</strong> : stored garbages</div>
+        </div>
+        <div class="note-star">
+          *หมายเหตุ : พื้นที่จุดพักขยะรวมของบริษัทฯ หากพนักงานทิ้งไม่ตรงจุดที่กำหนดไว้หรือภาชนะที่จัดไว้ให้ ให้ผู้ตรวจสอบดำเนินการแจ้งต่อเจ้าหน้าที่ที่นำวัสดุไม่ใช้แล้วดังกล่าวมาทิ้งเพื่อรับทราบและดำเนินการแก้ไขทันที
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Save Button Bar -->
+    <div style="text-align: center; margin-top: 24px;" class="no-print">
+      <button class="btn btn-success" onclick="saveCurrentInspectionForm()" style="font-size: 1.1rem; padding: 12px 28px; box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.3);">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+        บันทึกข้อมูลการตรวจสอบชุดนี้
+      </button>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- MODAL: IMAGE LIGHTBOX -->
+  <!-- ========================================== -->
+  <div id="lightbox-modal" class="lightbox-modal" onclick="closeLightbox()">
+    <div class="lightbox-content" onclick="event.stopPropagation()">
+      <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+      <img id="lightbox-img" class="lightbox-img" src="" alt="ภาพหลักฐานการตรวจสอบ">
+      <div id="lightbox-caption" class="lightbox-caption"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast-msg" class="toast-msg">
+    <span>✓ บันทึกข้อมูลสำเร็จเรียบร้อย</span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
